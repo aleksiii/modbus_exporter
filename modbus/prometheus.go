@@ -35,6 +35,13 @@ var (
 		},
 		[]string{"slave", "name"},
 	)
+	modbusFloatIn = prometheus.NewGaugeVec(
+		prometheus.GaugeOpts{
+			Name: "modbus_float_32_total",
+			Help: "Modbus float32 input registers.",
+		},
+		[]string{"slave", "name"},
+	)
 	modbusDigitalOut = prometheus.NewGaugeVec(
 		prometheus.GaugeOpts{
 			Name: "modbus_digital_output_total",
@@ -57,4 +64,6 @@ func init() {
 	prometheus.MustRegister(modbusDigitalOut)
 	prometheus.MustRegister(modbusAnalogIn)
 	prometheus.MustRegister(modbusAnalogOut)
+	prometheus.MustRegister(modbusFloatIn)
+
 }

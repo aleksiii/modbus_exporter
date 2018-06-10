@@ -23,6 +23,8 @@ import (
 	"io/ioutil"
 	"log"
 	"time"
+	"encoding/binary"
+	"bytes"
 
 	"github.com/goburrow/modbus"
 	"github.com/lupoDharkael/modbus_exporter/config"
@@ -172,7 +174,20 @@ func scrapeSlave(slave config.ParsedSlave, hc *Handler) { //c modbus.Client) {
 					).Set(v)
 				}
 			}
-
+			if len(slave.FloatInput) != 0 {
+				values, err = getModbusData(slave.FloatInput,
+					c.ReadInputRegisters, config.FloatInput)
+				if err != nil {
+					glog.C <- fmt.Errorf("[%s:%s] %s",
+						slave.Name, config.FloatInput.String(), err)
+				}
+				for i, v := range values {
+					modbusFloatIn.WithLabelValues(
+						slave.Name,
+						slave.FloatInput[i].Name,
+					).Set(v)
+				}
+			}
 			if len(slave.AnalogOutput) != 0 {
 				values, err = getModbusData(slave.AnalogOutput,
 					c.ReadHoldingRegisters, config.AnalogOutput)
@@ -248,6 +263,16 @@ func getModbusData(registers []config.Register, f modbusFunc, t config.RegType) 
 			break
 		}
 		switch t {
+		case config.FloatInput:
+			for i := 0; i < int(rangeN); i++ {
+				if registers[0].Value+uint16(i) == registers[regIndex].Value {
+					data := modBytes
+					var f float32
+					err := binary.Read(bytes.NewBuffer(data), binary.BigEndian, &f)
+					results = append(results, f)
+					regIndex++
+				}
+			}
 		case config.DigitalInput, config.DigitalOutput:
 			for i := 0; i < int(rangeN); i++ {
 				if registers[0].Value+uint16(i) == registers[regIndex].Value {
